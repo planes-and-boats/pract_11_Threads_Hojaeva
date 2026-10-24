@@ -3,12 +3,15 @@
 #include <conio.h>
 #include <string>
 #include <fstream>
+#include <random>
 #include <exception>
 
 using namespace std;
 
 int* testStep = nullptr;
 int totalSteps = 0;
+random_device rd;
+mt19937 gen(rd());
 
 enum Status { Works, Suspended, Completed };
 
@@ -52,7 +55,8 @@ void Sprint(Robot* robot) {
 }
 
 void Recharging(Robot* robot) {
-    int time = rand() % 5 + 1;
+	uniform_int_distribution<> dist(1, 5);
+    int time = dist(gen);
     Sleep(time * 1000);
 
     Robot* rob = robot;
@@ -106,17 +110,19 @@ DWORD WINAPI RobotThread(LPVOID lpParam) {
             applyTesting(rob, currentTest);
         }
 
-        Sleep((rand() % 3 + 1) * 1000);
+		uniform_int_distribution<> dist(1, 3);
+        Sleep(dist(gen) * 1000);
     }
 
     rob->status = Status::Completed;
+	cout << "[СИСТЕМА] Модель #" << rob->id << " завершила тестирование  и покинула симуляцию." << endl;
+
     return 0;
 }
 
 int main()
 {
     setlocale(NULL, "Russian");
-    srand(time(NULL));
 
     Robot* robots = nullptr;
     HANDLE* hRobots = nullptr;
@@ -172,6 +178,8 @@ int main()
         Sleep(1000);
 
         cout << "[СИСТЕМА] Запуск симуляции..." << endl << endl;
+
+		Sleep(1000);
 
         for (int i = 0; i < robotCount; i++) {
             robots[i].id = i + 1;
@@ -258,8 +266,16 @@ int main()
 
         cout << endl << "[СИСТЕМА] Завершение симуляции." << endl << endl;
 
+		Sleep(1000);
+
         cout << endl << " --- ИТОГОВЫЙ ОТЧЕТ ЭФФЕКТИВНОСТИ // КЛАССИФИКАЦИЯ EVE CORP ---" << endl << endl;
+
+		Sleep(1000);
+
         cout << "\tРанг\tМодель\tОчки\tБатарея\t Статус" << endl << endl;
+
+		Sleep(1000);
+
         for (int i = 0; i < robotCount; i++) {
             cout << "\t" << i + 1 << "\t#" << robots[i].id;
             cout << "\t" << robots[i].points << "\t" << robots[i].energy << "%\t ";
@@ -267,6 +283,8 @@ int main()
             else if (robots[i].status == Status::Suspended) cout << "режим гибернации";
             else cout << "тест завершен / списан";
             cout << endl;
+
+			Sleep(200);
         }
         cout << endl << " ---" << endl << endl;
 
