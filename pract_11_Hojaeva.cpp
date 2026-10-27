@@ -10,8 +10,6 @@ using namespace std;
 
 int* testStep = nullptr;
 int totalSteps = 0;
-random_device rd;
-mt19937 gen(rd());
 
 enum Status { Works, Suspended, Completed };
 
@@ -55,8 +53,8 @@ void Sprint(Robot* robot) {
 }
 
 void Recharging(Robot* robot) {
-	uniform_int_distribution<> dist(1, 5);
-    int time = dist(gen);
+	srand(robot->id);
+    int time = rand() % 5 + 1;
     Sleep(time * 1000);
 
     Robot* rob = robot;
@@ -110,8 +108,8 @@ DWORD WINAPI RobotThread(LPVOID lpParam) {
             applyTesting(rob, currentTest);
         }
 
-		uniform_int_distribution<> dist(1, 3);
-        Sleep(dist(gen) * 1000);
+		srand(rob->id);
+		Sleep((rand() % 3 + 1) * 1000);
     }
 
     rob->status = Status::Completed;
@@ -123,6 +121,7 @@ DWORD WINAPI RobotThread(LPVOID lpParam) {
 int main()
 {
     setlocale(NULL, "Russian");
+	srand(time(0));
 
     Robot* robots = nullptr;
     HANDLE* hRobots = nullptr;
@@ -215,8 +214,14 @@ int main()
                     cout << endl << "[ПЕРЕХВАТ] Введите ID модели для заморозки процессов: ";
                     cin >> targetId;
                     if (targetId >= 1 && targetId <= robotCount) {
-                        robots[targetId - 1].status = Status::Suspended;
-                        cout << "[СТАТУС] Модель #" << targetId << " принудительно переведена в режим гибернации." << endl << endl;
+						if (robots[targetId - 1].status == Status::Suspended) {
+							cout << "[СТАТУС] Модель #" << targetId << " уже находится в режиме гибернации." << endl << endl;
+						}
+						else {
+							robots[targetId - 1].status = Status::Suspended;
+							SuspendThread(hRobots[targetId - 1]);
+							cout << "[СТАТУС] Модель #" << targetId << " принудительно переведена в режим гибернации." << endl << endl;
+						}
                     }
 
                     for (int i = 0; i < robotCount; i++) {
@@ -233,8 +238,14 @@ int main()
                     cout << endl << "[ПЕРЕХВАТ] Введите ID модели для разморозки процессов: ";
                     cin >> targetId;
                     if (targetId >= 1 && targetId <= robotCount) {
-                        robots[targetId - 1].status = Status::Works;
-                        cout << "[СТАТУС] Регенерация процессов модели #" << targetId << ". Возврат на Арену." << endl << endl;
+						if (robots[targetId - 1].status == Status::Works) {
+							cout << "[СТАТУС] Модель #" << targetId << " уже на Арене." << endl << endl;
+						}
+						else {
+							robots[targetId - 1].status = Status::Works;
+							ResumeThread(hRobots[targetId - 1]);
+							cout << "[СТАТУС] Регенерация процессов модели #" << targetId << ". Возврат на Арену." << endl << endl;
+						}
                     }
 
                     for (int i = 0; i < robotCount; i++) {
@@ -253,6 +264,7 @@ int main()
         for (int i = 0; i < robotCount; i++) {
             CloseHandle(hRobots[i]);
         }
+
 
         for (int i = 0; i < robotCount - 1; i++) {
             for (int j = 0; j < robotCount - i - 1; j++) {
